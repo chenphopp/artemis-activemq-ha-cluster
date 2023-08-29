@@ -1,0 +1,71 @@
+version: '3.8'
+#name: "ArtemisCluster"
+###############################################
+networks:
+  artemis:
+    driver: bridge
+    attachable: true
+###############################################
+services:
+  haproxy:
+    image: haproxy:2.7.8-alpine
+    hostname: haproxy
+    ports:
+      - "9006:9000"
+      - "5672:5672"
+    volumes:
+       - ./haproxy:/usr/local/etc/haproxy:ro
+    networks:
+      - artemis
+    restart: unless-stopped  
+###############################################
+  artemis1:
+    image: witwickey/artemis-centos:2.28.0
+    hostname: artemis1
+    ports:
+      - "61617:61616"
+      - "5673:5672"
+      - "5446:5445"
+      - "1884:1883"
+      - "8162:8161"
+    environment:
+      ARTEMIS_USER: admin
+      ARTEMIS_PASSWORD: admin
+      ANONYMOUS_LOGIN: 'false'
+    volumes:
+       #- ./master/artemis-instance/etc:/var/lib/artemis-instance/etc
+       #- ./master/artemis-instance/data:/var/lib/artemis-instance/data
+       - ./master/artemis-instance:/var/lib/artemis-instance
+    networks:
+      - artemis
+    #command: sh -c "cp /var/lib/artemis/etc/broker.xml /var/lib/artemis-instance/etc/broker.xml"
+    restart: unless-stopped
+###############################################
+  artemis2:
+    image: witwickey/artemis-centos:2.28.0
+    hostname: artemis2
+    ports:
+      - "61618:61616"
+      - "5674:5672"
+      - "5447:5445"
+      - "1885:1883"
+      - "8163:8161"
+    environment:
+      ARTEMIS_USER: admin
+      ARTEMIS_PASSWORD: admin
+      ANONYMOUS_LOGIN: 'false'
+    volumes:
+       - ./slave/artemis-instance:/var/lib/artemis-instance
+       #- ./slave/artemis-instance/etc:/var/lib/artemis-instance/etc
+       - ./master/artemis-instance/data:/var/lib/artemis-instance/data
+    networks:
+      - artemis
+    #command: sh -c "cp /var/lib/artemis/etc/broker.xml /var/lib/artemis-instance/etc/broker.xml"
+    restart: unless-stopped
+###############################################
+volumes:
+     artemis-data:
+       external: true
+###############################################
+# docker network create --driver bridge artemis --attachable
+# cp /var/lib/artemis/etc/broker.xml /var/lib/artemis-instance/etc/broker.xml
